@@ -259,6 +259,40 @@ body {
     background: var(--bg-white);
 }
 
+.whatsapp-input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-white);
+    transition: all 0.3s ease;
+}
+
+.whatsapp-input-wrapper:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.whatsapp-prefix {
+    padding: 14px 0 14px 18px;
+    color: var(--text-medium);
+    font-weight: 600;
+    font-size: 1rem;
+    border-right: 1px solid var(--border-color);
+    margin-right: 8px;
+}
+
+.whatsapp-input-wrapper input {
+    border: none;
+    padding: 14px 18px 14px 0;
+    flex: 1;
+    outline: none;
+}
+
+.whatsapp-input-wrapper input:focus {
+    box-shadow: none;
+}
+
 .form-group input:focus {
     outline: none;
     border-color: var(--primary-color);
@@ -266,6 +300,10 @@ body {
 }
 
 .form-group input:invalid:not(:placeholder-shown) {
+    border-color: var(--danger-color);
+}
+
+.whatsapp-input-wrapper:has(input:invalid:not(:placeholder-shown)) {
     border-color: var(--danger-color);
 }
 

@@ -38,10 +38,17 @@ novaCotacaoBtn.addEventListener('click', handleNovaCotacao);
 closeModal.addEventListener('click', closeModalFunc);
 fecharModalBtn.addEventListener('click', closeModalFunc);
 
+// Variável para controlar se deve redirecionar após fechar o modal
+let shouldRedirectToForm = false;
+
 // Fechar modal ao clicar fora dele
 window.addEventListener('click', (event) => {
     if (event.target === contatoModal) {
         closeModalFunc();
+        if (shouldRedirectToForm) {
+            handleNovaCotacao();
+            shouldRedirectToForm = false;
+        }
     }
 });
 
@@ -56,8 +63,36 @@ function validateNome() {
         return false;
     }
     
-    if (nome.length < 3) {
-        errorElement.textContent = 'O nome deve ter pelo menos 3 caracteres';
+    // Verificar se contém apenas letras e espaços (sem números ou caracteres especiais)
+    const nomeRegex = /^[a-zA-ZÀ-ÿ\s]+$/;
+    if (!nomeRegex.test(nome)) {
+        errorElement.textContent = 'O nome não pode conter números ou caracteres especiais';
+        nomeInput.style.borderColor = 'var(--danger-color)';
+        return false;
+    }
+    
+    // Dividir o nome em partes (primeiro nome e sobrenome)
+    const partesNome = nome.split(/\s+/).filter(parte => parte.length > 0);
+    
+    if (partesNome.length < 2) {
+        errorElement.textContent = 'Por favor, informe seu nome completo (nome e sobrenome)';
+        nomeInput.style.borderColor = 'var(--danger-color)';
+        return false;
+    }
+    
+    const primeiroNome = partesNome[0];
+    const sobrenome = partesNome[partesNome.length - 1];
+    
+    // Verificar se o primeiro nome tem pelo menos 3 letras
+    if (primeiroNome.length < 3) {
+        errorElement.textContent = 'O primeiro nome deve ter pelo menos 3 letras';
+        nomeInput.style.borderColor = 'var(--danger-color)';
+        return false;
+    }
+    
+    // Verificar se o sobrenome tem pelo menos 2 letras
+    if (sobrenome.length < 2) {
+        errorElement.textContent = 'O sobrenome deve ter pelo menos 2 letras';
         nomeInput.style.borderColor = 'var(--danger-color)';
         return false;
     }
@@ -92,8 +127,6 @@ function validateEmail() {
 function validateWhatsApp() {
     const whatsapp = whatsappInput.value.trim();
     const errorElement = document.getElementById('whatsappError');
-    // Aceita formatos: +55 11 98765-4321, (11) 98765-4321, 11987654321, etc.
-    const whatsappRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
     
     if (whatsapp === '') {
         errorElement.textContent = 'O WhatsApp é obrigatório';
@@ -101,10 +134,11 @@ function validateWhatsApp() {
         return false;
     }
     
-    // Remove caracteres não numéricos para validar
+    // Remove caracteres não numéricos para validar (já temos +55 fixo, então validamos apenas o restante)
     const digitsOnly = whatsapp.replace(/\D/g, '');
-    if (digitsOnly.length < 10 || digitsOnly.length > 15) {
-        errorElement.textContent = 'Por favor, insira um número válido (com DDD)';
+    // DDD (2 dígitos) + número (8 ou 9 dígitos) = 10 ou 11 dígitos
+    if (digitsOnly.length < 10 || digitsOnly.length > 11) {
+        errorElement.textContent = 'Por favor, insira um número válido com DDD (ex: 11 98765-4321)';
         whatsappInput.style.borderColor = 'var(--danger-color)';
         return false;
     }
@@ -274,11 +308,11 @@ function handleSolicitarContato() {
     // Aqui você poderia enviar os dados para um backend se tivesse
     // Por enquanto, apenas mostramos o modal
     
-    // Salvar dados no localStorage para referência
+    // Salvar dados no localStorage para referência (incluindo +55 no WhatsApp)
     const dadosCotacao = {
         nome: nomeInput.value,
         email: emailInput.value,
-        whatsapp: whatsappInput.value,
+        whatsapp: '+55 ' + whatsappInput.value,
         tamanho: parseFloat(tamanhoInput.value),
         peso: parseFloat(pesoInput.value),
         distancia: parseFloat(distanciaInput.value),
@@ -291,7 +325,10 @@ function handleSolicitarContato() {
     cotacoes.push(dadosCotacao);
     localStorage.setItem('cotacoes', JSON.stringify(cotacoes));
     
-    // Mostrar modal
+    // Marcar que deve redirecionar após fechar o modal
+    shouldRedirectToForm = true;
+    
+    // Mostrar modal e, ao fechar, redirecionar para o formulário
     contatoModal.style.display = 'flex';
 }
 
@@ -323,20 +360,26 @@ function handleNovaCotacao() {
 // Fechar modal
 function closeModalFunc() {
     contatoModal.style.display = 'none';
+    // Se deve redirecionar, resetar formulário
+    if (shouldRedirectToForm) {
+        handleNovaCotacao();
+        shouldRedirectToForm = false;
+    }
 }
 
-// Formatação automática do WhatsApp enquanto digita
+// Formatação automática do WhatsApp enquanto digita (sem o +55, pois já está fixo)
 whatsappInput.addEventListener('input', (e) => {
     let value = e.target.value.replace(/\D/g, '');
     if (value.length > 0) {
         if (value.length <= 2) {
-            value = `+${value}`;
-        } else if (value.length <= 4) {
-            value = `+${value.slice(0, 2)} ${value.slice(2)}`;
-        } else if (value.length <= 9) {
-            value = `+${value.slice(0, 2)} ${value.slice(2, 4)} ${value.slice(4)}`;
+            // Apenas DDD
+            value = value;
+        } else if (value.length <= 10) {
+            // DDD + 8 dígitos
+            value = `${value.slice(0, 2)} ${value.slice(2, 6)}-${value.slice(6, 10)}`;
         } else {
-            value = `+${value.slice(0, 2)} ${value.slice(2, 4)} ${value.slice(4, 9)}-${value.slice(9, 13)}`;
+            // DDD + 9 dígitos
+            value = `${value.slice(0, 2)} ${value.slice(2, 7)}-${value.slice(7, 11)}`;
         }
     }
     e.target.value = value;
